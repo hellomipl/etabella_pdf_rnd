@@ -1,0 +1,11 @@
+<div class="resizable-rectangle-container">
+    <svg  width="800" height="600" (mousedown)="startDrawing($event)">
+        <!-- Resize handles -->
+        @if(rect){
+        <rect [attr.x]="rect.x" [attr.y]="rect.y" [attr.width]="rect.width" [attr.height]="rect.height"
+            fill="transparent" stroke="black" stroke-width="1" (mousedown)="startDragging($event)" />
+        <circle *ngFor="let handle of resizeHandles" [attr.cx]="handle.cx" [attr.cy]="handle.cy" r="5" fill="blue"
+            (mousedown)="startResizing($event, handle.position)" />
+        }
+    </svg>
+</div>

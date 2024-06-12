@@ -1,7 +1,9 @@
 import { CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { FreeTextEditorAnnotation, HighlightEditorAnnotation, InkEditorAnnotation, NgxExtendedPdfViewerComponent, NgxExtendedPdfViewerModule, NgxExtendedPdfViewerService, PdfHighlightEditorComponent } from 'ngx-extended-pdf-viewer';
+import { AnnotationEditorEditorModeChangedEvent, FreeTextEditorAnnotation, HighlightEditorAnnotation, InkEditorAnnotation, NgxExtendedPdfViewerComponent, NgxExtendedPdfViewerModule, NgxExtendedPdfViewerService, PdfHighlightEditorComponent, ResponsiveVisibility } from 'ngx-extended-pdf-viewer';
 import { IPDFViewerApplication } from 'ngx-extended-pdf-viewer';
+import { PdfComponent } from './pdfviewer/pdf/pdf.component';
+import { ResizableRectangleComponent } from './resizable-rectangle/resizable-rectangle.component';
 
 export interface Annotation {
   page: number;
@@ -15,13 +17,15 @@ export interface Annotation {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, NgxExtendedPdfViewerModule],
+  imports: [RouterOutlet, NgxExtendedPdfViewerModule,PdfComponent,ResizableRectangleComponent],
   // schemas:[CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
   @ViewChild('pdfViewer') pdfViewer!: PdfHighlightEditorComponent;
+  // @ViewChild(NgxExtendedPdfViewerComponent) pdfViewer: NgxExtendedPdfViewerComponent;
+
   title = 'pdfmanagement';
   pdfSrc: string = './assets/demo.pdf';
   pageViewMode: any = 'multiple';
@@ -30,12 +34,100 @@ export class AppComponent {
   // @ViewChild(NgxExtendedPdfViewerComponent, { static: false })
   // private pdfViewer!: NgxExtendedPdfViewerComponent;
   currentPage: number = 1;
-  constructor(private pdfService: NgxExtendedPdfViewerService, private cdr: ChangeDetectorRef) {
+  highlightOBJ: HighlightEditorAnnotation = {
+    annotationType: 9,
+    color: [255, 255, 152],
+    rect: [134.35915854669386, 726.5100677120456, 228.06898024774367, 739.7132038488952],
+    pageIndex: 0,
+    rotation: 0
+  }
 
+  public show: ResponsiveVisibility = true;
+
+  public isSelected = false;
+
+  constructor(private pdfService: NgxExtendedPdfViewerService, private cdr: ChangeDetectorRef) {
+    document.addEventListener('mouseup', () => {
+      const selection: any = window.getSelection();
+      if (selection.rangeCount > 0) {
+        return;
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const coordinates = {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height
+        };
+        console.log('Screen Coordinates:', coordinates);
+        // Assuming the PDF is rendered within an element with id 'pdfViewer'
+        const pdfViewer:any = document.getElementById('viewer');
+        const pdfViewerRect = pdfViewer.getBoundingClientRect();
+        const pdfCoordinates = {
+          x: coordinates.x - pdfViewerRect.left,
+          y: coordinates.y - pdfViewerRect.top,
+          width: coordinates.width,
+          height: coordinates.height
+        };
+        console.log('PDF Coordinates:', pdfCoordinates);
+        // Create the annotation object
+        const annotation: any = this.createAnnotationObject(pdfCoordinates);
+        console.log('Annotation Object:', annotation);
+        // Add annotation to the PDF viewer (adjust this according to your PDF viewer API)
+        // pdfViewer.addAnnotation(annotation); // Example method call
+
+        setTimeout(() => {
+          this.pdfService.addEditorAnnotation(annotation);
+        }, 300);
+      }
+    });
+  }
+
+  convertToPdfCoordinates(screenCoordinates: any, pdfViewerRect: any) {
+    return {
+      x: screenCoordinates.x - pdfViewerRect.left,
+      y: screenCoordinates.y - pdfViewerRect.top,
+      width: screenCoordinates.width,
+      height: screenCoordinates.height
+    };
+  }
+
+  createAnnotationObject(pdfCoordinates: any) {
+    const bezierPoints = [];
+    const points = [];
+    const x = pdfCoordinates.x;
+    const y = pdfCoordinates.y;
+    const width = pdfCoordinates.width;
+    const height = pdfCoordinates.height;
+
+    // Assuming the text selection spans multiple lines, we can add points for each line
+    for (let i = 0; i <= height; i += 10) {
+      bezierPoints.push(x, y + i, x + width, y + i);
+      points.push(x, y + i, x + width, y + i);
+    }
+
+    return {
+      annotationType: 15,
+      color: [0, 0, 0],
+      thickness: 8,
+      opacity: 0.48,
+      paths: [
+        {
+          bezier: points,
+          points: points
+        }
+      ],
+      pageIndex: 0,
+      rect: [x, y, x + width, y + height],
+      rotation: 0,
+      structTreeParentId: ""
+    };
   }
 
   ngAfterViewInit() {
     this.pdfService;
+
+
   }
 
 
@@ -58,11 +150,20 @@ export class AppComponent {
     console.log('page rendered', e);
   }
   onTextLayerRendered(e: any) {
+    debugger;
     console.log('textlayer rendered', e);
+
   }
 
   onPdfLoaded(e: any) {
+    debugger;
     console.log('pdf loaded', e);
+
+    const PDFViewerApplication: IPDFViewerApplication = (window as any).PDFViewerApplication;
+    PDFViewerApplication.eventBus.on('annotationeditormodechanged', ({ mode }: AnnotationEditorEditorModeChangedEvent) => {
+      console.warn(mode);
+    });
+
   }
 
   onPdfLoadingStarts(e: any) {
@@ -78,10 +179,12 @@ export class AppComponent {
   }
 
   onAnnotationLayerRendered(e: any) {
+    debugger;
     console.log('annotation layer rendered', e);
   }
 
   onAnnotationEditorLayerRendered(e: any) {
+    debugger;
     console.log('annotation editor layer rendered', e);
   }
 
@@ -247,42 +350,45 @@ export class AppComponent {
         if (anno) {
           console.log(anno[0]);
         }*/
-        const x = 400 * Math.random();
-        const y = 350 + 500 * Math.random();
-        const drawing: InkEditorAnnotation = {
-          annotationType: 15,
-          color: [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)],
-          thickness:  10,
-          opacity: 1,
-          paths: [
-            {
-              bezier: [x + 0.5, y, x + 0.5, y + 44, x + 44, y + 66, x + 88, y + 44],
-              points: [x + 0.5, y, x + 0.5, y + 44],
-            },
-          ],
-          pageIndex: 0,
-          rect: [x, y, x + 100, y + 66],
-          rotation: 0,
-        };
-        this.pdfService.addEditorAnnotation(drawing);
-   /* const x = 400 * Math.random();
-    const y = 350 + 500 * Math.random();
-    const drawing: InkEditorAnnotation = {
-      annotationType: 15,
-      color: [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)],
-      thickness: Math.random() * 10,
-      opacity: 1,
-      paths: [
-        {
-          bezier: [x + 0.5, y, x + 0.5, y + 44, x + 44, y + 66, x + 88, y + 44],
-          points: [x + 0.5, y, x + 0.5, y + 44],
-        },
-      ],
-      pageIndex: 0,
-      rect: [x, y, x + 100, y + 66],
-      rotation: 0,
-    };
-    this.pdfService.addEditorAnnotation(drawing);*/
+    /*  const x = 400 * Math.random();
+      const y = 350 + 500 * Math.random();
+      const drawing: InkEditorAnnotation = {
+        annotationType: 15,
+        color: [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)],
+        thickness:  10,
+        opacity: 1,
+        paths: [
+          {
+            bezier: [x + 0.5, y, x + 0.5, y + 44, x + 44, y + 66, x + 88, y + 44],
+            points: [x + 0.5, y, x + 0.5, y + 44],
+          },
+        ],
+        pageIndex: 0,
+        rect: [x, y, x + 100, y + 66],
+        rotation: 0,
+      };*/
+    const drawing = this.highlightOBJ;
+   let data =  this.pdfService.addEditorAnnotation(drawing);
+   debugger;
+    // addSerializedEditor
+    /* const x = 400 * Math.random();
+     const y = 350 + 500 * Math.random();
+     const drawing: InkEditorAnnotation = {
+       annotationType: 15,
+       color: [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)],
+       thickness: Math.random() * 10,
+       opacity: 1,
+       paths: [
+         {
+           bezier: [x + 0.5, y, x + 0.5, y + 44, x + 44, y + 66, x + 88, y + 44],
+           points: [x + 0.5, y, x + 0.5, y + 44],
+         },
+       ],
+       pageIndex: 0,
+       rect: [x, y, x + 100, y + 66],
+       rotation: 0,
+     };
+     this.pdfService.addEditorAnnotation(drawing);*/
     this.getSerializeAnnot();
   }
 
@@ -310,5 +416,7 @@ export class AppComponent {
   //     console.log(anno[0]);
   //   }
   // }
-
+  public onClick(): void {
+    document.getElementById('editorHighlight')?.click();
+  }
 }
