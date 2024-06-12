@@ -44,3 +44,10 @@ export interface uuidGroup {
     id: number,
     linktype: string
 }
+
+export interface itemPosition {
+    x: number,
+    y: number,
+    width: number,
+    height: number
+}

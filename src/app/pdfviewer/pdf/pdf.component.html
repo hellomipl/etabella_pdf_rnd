@@ -6,8 +6,12 @@
   [showDrawEditor]="true" [showStampEditor]="true" [relativeCoordsOptions]="1" [handTool]="false" [showBorders]="false"
   [(page)]="currentPage" (pageChange)="onPageChange($event)" (pageRendered)="onPageRendered($event)"
   (textLayerRendered)="onTextLayerRendered($event)" (layersloaded)="onLayersLoaded($event)"
-  (xfaLayerRendered)="onXfaLayerRendered($event)" (annotationLayerRendered)="onAnnotationLayerRendered($event)">
+  (xfaLayerRendered)="onXfaLayerRendered($event)" (annotationLayerRendered)="onAnnotationLayerRendered($event)" (mouseup)="OnMouseUp($event)">
 </ngx-extended-pdf-viewer>
 }
+
+
+
+
 <!-- <app-resizable-rectangle>
 </app-resizable-rectangle>  -->

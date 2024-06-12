@@ -21,6 +21,10 @@ export class PdfService {
   private readonly docSvg: string = 'assets/icon/doc.svg';
   private readonly webSvg: string = 'assets/icon/web.svg';
   private readonly hiltSvg: string = 'assets/img/linktype H.svg';
+
+  // core settings
+  private readonly foreignObjSize: number = 60;
+  private readonly iconXmargin: number = 20;
   constructor() {
 
   }
@@ -65,35 +69,6 @@ export class PdfService {
     return node;
   }
 
-  /*  adjustNodeDimensions(node: HTMLElement, viewport: PDFPageViewport): void {
-      const scale = viewport.scale;
-      const [x, y, width, height] = ['x', 'y', 'width', 'height'].map((attr) => parseInt(node.getAttribute(attr) || '0', 10) * scale);
-  
-      ['width', 'height'].forEach((attr) => {
-        node.setAttribute(attr, String(parseInt(node.getAttribute(attr) || '0', 10) * scale));
-      });
-  
-      const path = node.querySelector('path');
-      const svg = path?.parentNode; // Add null check for 'path' variable
-  
-      [node, svg, path, node.querySelector('rect')].forEach((n: any) => {
-        ['width', 'height'].forEach((attr) => {
-          n.setAttribute(attr, String(parseInt(n.getAttribute(attr) || '0', 10) * scale));
-        });
-      });
-  
-      if (path) {
-        this.transform(path, { ...viewport, scale: 1 });
-      }
-  
-      const positions: { [key: number]: { x: number; y: number } } = {
-        90: { x: viewport.width - y - width, y: x },
-        180: { x: viewport.width - x - width, y: viewport.height - y - height },
-        270: { x: y, y: viewport.height - x - height },
-      };
-  
-      Object.assign(node, positions[viewport.rotation % 360]);
-    }*/
 
   getTranslation(viewport: PDFPageViewport): { x: number; y: number } {
     const { rotation, width, height, scale } = viewport;
@@ -239,10 +214,10 @@ export class PdfService {
   async renderForeignObject(icon: iconsGroup, viewport: PDFPageViewport): Promise<HTMLElement> {
     const group = this.defaultForeignObjectNode();
     const groupData: any[] = this.groupByLinkType(icon.uuids);
-    const height = ((icon.maxY - icon.minY) > (groupData.length * 60) ? (icon.maxY - icon.minY) : (groupData.length * 60));
+    const height = ((icon.maxY - icon.minY) > (groupData.length * this.foreignObjSize) ? (icon.maxY - icon.minY) : (groupData.length * this.foreignObjSize));
     const positionY = icon.minY + ((icon.maxY - icon.minY) / 2);
-    const positionX = (viewport.rawDims.pageWidth + 20);
-    this.setAttributes(group, { style: 'scale: calc(var(--scale-factor) * 1)', x: positionX, min: icon.minY, max: icon.maxY, y: positionY - (height / 2), pos: positionY, posmin: (height / 2), width: 60, height: height }); // style: 'scale: calc(var(--scale-factor) * 1)', // + (((icon.maxY - icon.minY) / 2))
+    const positionX = (viewport.rawDims.pageWidth + this.iconXmargin);
+    this.setAttributes(group, { style: 'scale: calc(var(--scale-factor) * 1)', x: positionX, min: icon.minY, max: icon.maxY, y: positionY - (height / 2), pos: positionY, posmin: (height / 2), width: this.foreignObjSize, height: height }); // style: 'scale: calc(var(--scale-factor) * 1)', // + (((icon.maxY - icon.minY) / 2))
 
 
     group.innerHTML = await this.GenBubleIcon(groupData, icon.maxY - icon.minY);
@@ -354,71 +329,5 @@ export class PdfService {
     }, []);
   }
 
-
-  /*
-    groupByYIntersections(data: PDFAnnotation[]) {
-      data = data.filter(a => !a.isTemp);
-      const groups: { uuids: string[], minY: number, maxY: number }[] = [];
-  
-      data.forEach(item => {
-        const elements = item.rects || item.lines?.map(line => ({ y: parseFloat(line[1]), height: Number(item.width) || 4 }));
-        if (!elements) return;
-  
-        let groupFound = false;
-        let minY = Math.min(...elements.map(el => el.y));
-        let maxY = Math.max(...elements.map(el => el.y + el.height));
-  
-        for (const group of groups) {
-          for (const memberId of group.uuids) {
-            const member = data.find((d: any) => d.uuid === memberId);
-            if (!member) continue;
-  
-            const memberElements = member.rects || member.lines?.map(line => ({ y: parseFloat(line[1]), height: Number(item.width) || 4 }));
-            if (memberElements?.some((memberElement: any) => elements.some(element => this.rangesIntersect(element.y, element.height, memberElement.y, memberElement.height)))) {
-              group.uuids.push(item.uuid);
-              group.minY = Math.min(group.minY, minY);
-              group.maxY = Math.max(group.maxY, maxY);
-              groupFound = true;
-              break;
-            }
-          }
-          if (groupFound) break;
-        }
-  
-        if (!groupFound) {
-          groups.push({ uuids: [item.uuid], minY, maxY });
-        }
-      });
-  
-      return groups; //.map(group => ({ uuids: group.uuids, max: group.maxY, min: group.minY }));
-    }
-  
-  */
-
-
-  /*
-    groupByYIntersections(data: PDFAnnotation[]) {
-      const groups: any = [];
-      data.forEach(item => {
-        const elements = item.rects || item.lines?.map(line => ({ y: parseFloat(line[1]), height: Number(item.width) | 4 }));
-        if (!elements) return;
-        let groupFound = false;
-        for (const group of groups) {
-          for (const member of group) {
-            const memberElements = member.rects || member.lines.map((line: any) => ({ y: parseFloat(line[1]), height: Number(item.width) | 4 }));
-            if (memberElements.some((memberElement: any) => elements?.some(element => this.rangesIntersect(element.y, element.height, memberElement.y, memberElement.height)))) {
-              group.push(item);
-              groupFound = true;
-              break;
-            }
-          }
-          if (groupFound) break;
-        }
-        if (!groupFound) {
-          groups.push([item]);
-        }
-      });
-      return groups;
-    }*/
 
 }
