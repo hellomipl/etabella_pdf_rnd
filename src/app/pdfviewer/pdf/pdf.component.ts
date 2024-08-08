@@ -20,7 +20,8 @@ export class PdfComponent {
 
 
 
-  pdfSrc: string = 'http://localhost:4500/assets/demo.pdf';
+  //pdfSrc: string = 'http://localhost:4500/assets/demo.pdf';
+  pdfSrc: string = 'https://etabella.legal:3443/doc/case22/file_602878100339.PDF';
   pageViewMode: any = 'multiple';
   pageRotaion: any = 0;
   currentPage: number = 0;

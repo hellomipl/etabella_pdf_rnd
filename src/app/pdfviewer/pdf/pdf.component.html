@@ -1,6 +1,11 @@
 @if(globannots.length)
 {
-<ngx-extended-pdf-viewer #pdfViewer [src]="pdfSrc" [showToolbar]="true" [showHandToolButton]="true"
+<ngx-extended-pdf-viewer #pdfViewer 
+
+[src]="pdfSrc"
+
+
+[showToolbar]="true" [showHandToolButton]="true"
   [showOpenFileButton]="true" [showPrintButton]="true" [showSecondaryToolbarButton]="true" [showSidebarButton]="true"
   [textLayer]="true" [zoom]="100" [pageViewMode]="pageViewMode" [rotation]="pageRotaion" [showHighlightEditor]="true"
   [showDrawEditor]="true" [showStampEditor]="true" [relativeCoordsOptions]="1" [handTool]="false" [showBorders]="false"
